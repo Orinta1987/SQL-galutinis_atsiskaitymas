@@ -1,0 +1,267 @@
+-- 1. 
+/*
+Naudoti: sql_invoicing.invoices;
+Pateikti 'client_id', 'invoice_total', 'number' stulpelius. Surūšiuokite duomenis pagal 'client_id'
+nuo mažiausios reikšmės ir pagal 'invoice_total' nuo didžiausios reikšmės (1t);
+*/
+USE sql_invoicing;
+
+SELECT client_id, invoice_total, number
+FROM invoices
+ORDER BY client_id ASC, invoice_total DESC; 
+ 
+-- 2. 
+/*
+Naudoti: sql_invoicing.invoices; 
+Pateikite visus unikalias 'client_id' reikšmes ir jas išrikiuokit
+nuo didžiausios mažėjančia reikšme. (1t);
+*/
+USE sql_invoicing;
+
+SELECT DISTINCT(client_id)
+FROM invoices
+ORDER BY client_id DESC; 
+
+-- 3.
+/*
+Naudoti: sql_invoicing.payments;
+Parašykite SQL užklausą, kuri paskaičiuoja bendrą visų mokėjimų ('amount') sumą.
+Rezultatą pateikite stulpelyje 'iš viso'. Taip pat paskaičiuokite mokėjimų vidurkį - 
+pavadinkite stulpelį 'mokėjimų vidurkis'. Paskaičiuokite mažiausią ir didžiausią mokėjimą.
+Šiuos stulpelius pavadinkite savo parinktais pavadinimais.
+Taip pat paskaičiuokite unikalių pirkėjų ('client_id') skaičių, bei unikalių sąskaitų faktūrų kiekį ('invoice_id').
+Šiuos stulpelius taip pat pavadinkite savo parinktais pavadinimais. (2t);
+*/
+USE sql_invoicing;
+
+SELECT 
+SUM(amount) AS 'iš viso',
+AVG(amount) AS 'mokėjimų vidurkis',
+MIN(amount) AS 'mažiausias mokėjimas', 
+MAX(amount) AS 'didžiausias mokėjimas',
+COUNT(DISTINCT(client_id)) AS 'kiek unikalių pirkėjų',
+COUNT(DISTINCT(invoice_id)) AS 'kiek unikalių sf'
+FROM payments; 
+
+-- 4.
+/*
+Naudoti: sql_hr.employees; 
+Parašykite SQL užklausą, kuri ištrauktų visus įrašus, kur stulpelio 'salary' 
+reikšmė yra mažesnė už 40 000. Išrikiuokite įrašus nuo dižiausios algos ('salary') mažėjančia tvarka.
+Prie šitų išfiltruotų įrašu pateikite papildomą stulpelį (užvadinkite jį 'new_salary'), kur 
+alga būtų padidinta 15 procentų. (2t);
+*/
+USE sql_hr; 
+
+SELECT *, 
+salary * 1.15 AS new_salary
+FROM employees
+WHERE salary < 40000
+ORDER BY salary DESC; 
+
+-- 5. 
+/*
+Naudoti: sql_store.products;
+Ištirkite produkto pavadinimo ('name') stulpelį. Kelinta raidė yra 'e' (galima naudoti mysql position funkciją). 
+Išrikiuokite rezultatą nuo toliausiai esančios 'e' raidės. (1t);
+*/
+USE sql_store; 
+
+SELECT name, POSITION("e" IN name)
+FROM products
+ORDER BY POSITION("e" IN name) DESC; 
+-- 6. 
+/*
+Naudoti: sql_store.customers; 
+Parašykite SQL užklausą, kuri ištrauktų visus įrašus, kurių miestas ('city') yra Vilnius, Klaipėda ir Alytus,
+o lojalumo taškų ('points') pirkėjas yra surinkęs mažiau nei 1000.
+Išrikiuoti rezultatus pagal lojalumo taškus didėjančia tvarka. (1t);
+*/
+USE sql_store; 
+
+SELECT *
+FROM customers
+WHERE city IN ('Vilnius', 'Klaipėda', 'Alytus') AND points < 1000
+ORDER BY points ASC; 
+
+-- 7.
+/*
+Naudoti: sql_hr.employees;
+Parašykite SQL užklausą, kuri suskaičiuotų algų sumą darbuotojų, 
+kurių 'job_title' stulpelyje yra reikšmė 'Operacijų'.
+Stulpelį pavadinkite `sum_salary` (1t);
+*/
+USE sql_hr;
+
+SELECT 
+SUM(salary) AS sum_salary
+FROM employees
+WHERE job_title LIKE '%Operacijų%';
+
+-- 8.
+/*
+Naudoti: sql_store.shippers,
+         sql_store.orders,
+         sql_store.order_items;
+Parašykite užklausą, kuri pateiktų tiekėjų (SHIPPERS lentelė) pavadinimus, 
+kiekį skirtingų prekių ('product_id') ir kiekį skirtingų užsakymų ('order_id') tiekėjas yra tiekęs.
+Stulpelius pavadinkite atitinkamai 'Cnt_unique_products', 'Cnt_unique_orders'.
+Išrikiuokite rezultatą pagal tiekėjo pavadinimą abacėlės tvarka. (3t);
+*/
+USE sql_store; 
+
+SELECT 
+s.name,
+COUNT(DISTINCT oi.product_id) AS Cnt_unique_products,
+COUNT(DISTINCT o.order_id) AS Cnt_unique_orders
+FROM shippers AS s
+INNER JOIN orders AS o
+ON s.shipper_id = o.shipper_id
+INNER JOIN order_items AS oi
+ON o.order_id = oi.order_id
+GROUP BY s.name
+ORDER BY s.name ASC; 
+
+-- 9.
+/*
+Naudoti: sakila.film;
+Parašykite SQL užklausą, kuri pateiktų filmų pavadinimus ('title'), reitingus ('rating'), bei 
+suskirstytų filmus pagal jų reitingus ('rating') į tokias kategorijas:
+Jei reitingas yra 'PG' arba 'G' tada 'PG_G'
+Jei reitingas yra 'NC-17' arba „PG-13“ tada „NC-17_PG-13“
+Visus kitus reitingus priskirkite kategorijai 'Nesvarbu'
+Kategorijas atvaizduokite stulpelyje 'Reitingo_grupė' (2t)
+*/
+USE sakila; 
+SELECT 
+title,
+rating,
+CASE
+   WHEN rating IN ('PG', 'G') THEN 'PG_G'
+   WHEN rating IN ('NC-17','PG-13') THEN 'NC-17_PG-13'
+   ELSE 'Nesvarbu'
+   END AS 'Reitingo_grupė'
+FROM film; 
+
+-- 10.
+/*
+Naudoti: sakila.film;
+Parašykite SQL užklausą, kuri suskaičiuotų kiek filmų priklauso reitingo grupėms, kurios buvo sukurtos 9-ame uždavinyje.
+Rezultate pateikite tik tokias reitingo grupes, kurioms priklausantis filmų kiekis yra 250 - 450 intervale. 
+Išrikiuokite rezultatą nuo didžiausio filmų kiekio mažėjančia tvarka. (4t)
+*/
+USE sakila; 
+
+SELECT 
+Reitingo_grupė,
+COUNT(*) AS 'filmų kiekis'
+FROM
+   (SELECT
+   title, 
+   rating,
+   CASE
+      WHEN rating IN ('PG','G') THEN 'PG_G'
+      WHEN rating IN ('NC-17','PG-13') THEN 'NC-17_PG-13'
+      ELSE 'Nesvarbu'
+   END AS 'Reitingo_grupė'
+   FROM film) AS atrinkti_filmai
+GROUP BY Reitingo_grupė 
+HAVING 'filmų kiekis' BETWEEN 250 AND 450
+ORDER BY 'filmų kiekis' DESC; 
+
+-- 11. 
+/*
+Naudoti: sakila.customer, 
+		 sakila.rental, 
+         sakila.inventory, 
+         sakila.film;
+Pateikite klientų vardus ('first_name') ir pavardes ('last_name') iš CUSTOMER lentelės, kurie išsinuomavo filmą 'AGENT TRUMAN'. 
+Užduotį atlikite naudodami subquery konstruktus. Išrikiuokite rezultą pagal kliento vardą (first_name) abecėlės tvarka.
+Užduotis atlikta teisingai be subquery vertinama (2t). 
+P.S. teisingame subquery konstrukte turi būti 4 x SELECT sakiniai. (4t);
+*/
+USE sakila; 
+
+SELECT
+first_name,
+last_name
+FROM customer
+WHERE customer_id IN (
+   SELECT customer_id 
+   FROM rental
+   WHERE inventory_id IN (
+      SELECT inventory_id
+      FROM inventory
+      WHERE film_id = (
+         SELECT film_id
+         FROM film
+         WHERE title = 'AGENT TRUMAN')))
+ORDER BY first_name ASC; 
+-- 12.
+/*
+Naudoti: sql_invoicing.clients, 
+		 sql_invoicing.invoices;
+Parašykite užklausą, kuri pateiktų clientų id ('client_id'), klientų pavadinimą ('name') ir kiek tie klientai 
+turi neapmokėtų sąskaitų. Neapmokėtom sąskaitom ieškoti naudokite 'payment_date' stulpelį.
+Išrikiuokite rezultatą pagal kliento id nuo didžiausios reikšmės mažėjančia tvarka. (3t);
+*/
+USE sql_invoicing; 
+SELECT 
+c.client_id,
+name,
+i.payment_date
+FROM clients AS c
+LEFT JOIN invoices AS i
+ON c.client_id = i.client_id 
+WHERE i.payment_date IS NOT NULL
+ORDER BY c.client_id DESC; 
+
+-- 13.
+/*
+Naudoti: sql_store.products;
+Iš products lentelės pateikite produkto pavadinimą ('name').
+Šalia pateikite ir kitą stulpelį, kuriame suformuotumėte naują produkto pavadinimo rašymo struktūrą ir pavadinkite jį 'new_name'.
+Sąlyga: jei produkto pavadinimas turi tarpelį, tuomet naujoje struktūroje jį pakeiskite į tris žvaigždutes '***';
+		jei produkto pavadinimas tarpelio neturi, tuomet pridėkite prieš pavadinimą trys šauktukus '!!!'. (2t);
+*/
+USE sql_store; 
+
+SELECT
+name, 
+    CASE
+    WHEN name LIKE '% %' THEN REPLACE(name, ' ', '***')
+    ELSE CONCAT('!!!', name)
+    END AS new_name
+FROM products; 
+
+-- 14.
+/*
+Naudoti: sql_store.customers;
+Pateikite įrašus iš CUSTOMERS lentelės jei pirkėjas turi daugiau lojalumo taškų ('points') už visų  
+esančių pirkėjų lojalumo taškų vidurkį. Naudokite tokiai paieškai SUBQUERY konstruktą.
+Išrikiuokite įrašus nuo daugiausiai lojalumo taškų turinčio pirkėjo. (2t);
+*/
+USE sql_store; 
+
+SELECT *
+FROM customers
+WHERE points > 
+    ( SELECT AVG(points)
+    FROM customers)
+ORDER BY points DESC;
+
+-- 15.
+/*
+Parašykite SELECT užklausą, kuri atvaizduotų Jūsų vardą kaip reikšmę stulpelyje pavadinimu 'Vardas',
+stulpelį 'VCS MySQL kursas' su reikšme 'Labai patiko :)' ir stulpelį 'Surinkau taškų' su taškų skaičiumi, kurį 
+manote jog surinkote spręsdami šį testą. :)))
+(1t);
+*/
+USE sql_store;
+
+INSERT INTO 15tas_klausimas (Vardas,VCS_MySQL_kursas,Surinkau_taškų)
+VALUES ('Orinta', 'Labai patiko :)',25);
+
+SELECT * 
+FROM 15tas_klausimas
+WHERE id = 1; 
